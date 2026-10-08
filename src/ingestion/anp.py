@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import hashlib
 import json
 import time
@@ -82,6 +83,25 @@ def fetch_source_page(
     response.raise_for_status()
     return response.text
 
+def build_destination_filename(url: str) -> str:
+    """Cria um nome único preservando o ano de origem do arquivo."""
+    decoded_path = unquote(urlparse(url).path)
+    filename = Path(decoded_path).name
+
+    if not filename:
+        raise ValueError(f"Não foi possível extrair o nome do arquivo: {url}")
+
+    years = re.findall(r"(?<!\d)(20\d{2})(?!\d)", decoded_path)
+
+    if not years:
+        return filename
+
+    year = years[0]
+
+    if re.search(rf"(?<!\d){year}(?!\d)", filename):
+        return filename
+
+    return f"{year}-{filename}"
 
 def download_file(
     url: str,
@@ -95,7 +115,7 @@ def download_file(
 
     destination_dir.mkdir(parents=True, exist_ok=True)
 
-    filename = Path(unquote(urlparse(url).path)).name
+    filename = build_destination_filename(url)
     if not filename:
         raise ValueError(f"Could not derive a filename from URL: {url}")
 

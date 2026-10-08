@@ -106,3 +106,34 @@ def test_update_manifest_replaces_same_source_url(tmp_path: Path) -> None:
     records = json.loads(manifest.read_text(encoding="utf-8"))
     assert len(records) == 2
     assert records[0]["filename"] == "new.csv"
+
+from src.ingestion.anp import (
+    build_destination_filename,
+    discover_csv_links,
+    select_links_by_year,
+    sha256_file,
+    update_manifest,
+)
+
+def test_build_destination_filename_adds_year_when_missing() -> None:
+    url = (
+        "https://www.gov.br/anp/pt-br/centrais-de-conteudo/"
+        "dados-abertos/2024/precos-gasolina-etanol-11.csv"
+    )
+
+    assert (
+        build_destination_filename(url)
+        == "2024-precos-gasolina-etanol-11.csv"
+    )
+
+
+def test_build_destination_filename_does_not_repeat_existing_year() -> None:
+    url = (
+        "https://www.gov.br/anp/pt-br/centrais-de-conteudo/"
+        "dados-abertos/2026/06-dados-abertos-precos-2026-06-gasolina-etanol.csv"
+    )
+
+    assert (
+        build_destination_filename(url)
+        == "06-dados-abertos-precos-2026-06-gasolina-etanol.csv"
+    )
