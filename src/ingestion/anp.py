@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
@@ -74,8 +75,12 @@ def download_file(
     url: str,
     destination_dir: Path,
     timeout: int = 120,
+    max_attempts: int = 4,
 ) -> dict[str, object]:
-    """Download one raw file atomically and return its provenance metadata."""
+    """Download one raw file atomically, retrying transient network failures."""
+    if max_attempts < 1:
+        raise ValueError("max_attempts must be at least 1")
+
     destination_dir.mkdir(parents=True, exist_ok=True)
 
     filename = Path(unquote(urlparse(url).path)).name
@@ -85,22 +90,39 @@ def download_file(
     destination = destination_dir / filename
     temporary = destination.with_suffix(destination.suffix + ".part")
 
-    try:
-        with requests.get(
-            url,
-            stream=True,
-            timeout=timeout,
-            headers={"User-Agent": USER_AGENT},
-        ) as response:
-            response.raise_for_status()
-            with temporary.open("wb") as file:
-                for chunk in response.iter_content(chunk_size=1024 * 1024):
-                    if chunk:
-                        file.write(chunk)
-        temporary.replace(destination)
-    finally:
-        if temporary.exists():
-            temporary.unlink()
+    for attempt in range(1, max_attempts + 1):
+        try:
+            if temporary.exists():
+                temporary.unlink()
+
+            with requests.get(
+                url,
+                stream=True,
+                timeout=timeout,
+                headers={"User-Agent": USER_AGENT},
+            ) as response:
+                response.raise_for_status()
+                with temporary.open("wb") as file:
+                    for chunk in response.iter_content(chunk_size=1024 * 1024):
+                        if chunk:
+                            file.write(chunk)
+
+            temporary.replace(destination)
+            break
+
+        except requests.RequestException:
+            if temporary.exists():
+                temporary.unlink()
+
+            if attempt == max_attempts:
+                raise
+
+            wait_seconds = 2 ** attempt
+            print(
+                f"Download interrupted for {filename}. "
+                f"Retry {attempt + 1}/{max_attempts} in {wait_seconds}s..."
+            )
+            time.sleep(wait_seconds)
 
     return {
         "filename": filename,
