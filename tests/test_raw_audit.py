@@ -60,4 +60,25 @@ def test_audit_csv_validates_schema(tmp_path: Path) -> None:
     assert result["schema_valid"] is True
     assert result["missing_columns"] == []
     assert result["unexpected_columns"] == []
-    
+
+def test_audit_csv_profiles_business_fields(tmp_path: Path) -> None:
+    csv_path = tmp_path / "sample.csv"
+    create_sample_csv(csv_path)
+
+    result = audit_csv(csv_path)
+
+    assert result["date_min"] == "2025-01-01"
+    assert result["date_max"] == "2025-01-02"
+    assert result["invalid_date_rows"] == 0
+
+    assert result["sale_price_min"] == 4.39
+    assert result["sale_price_max"] == 6.29
+    assert result["invalid_sale_price_rows"] == 0
+    assert result["non_positive_sale_price_rows"] == 0
+
+    assert result["states"] == {"RJ": 3}
+    assert result["products"] == {
+        "GASOLINA": 2,
+        "ETANOL": 1,
+    }
+    assert result["units"] == {"R$ / litro": 3}
