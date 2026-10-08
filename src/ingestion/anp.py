@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -30,6 +31,7 @@ def discover_csv_links(page_url: str, html: str) -> list[str]:
         href = anchor["href"].strip()
         absolute_url = urljoin(page_url, href)
         path = unquote(urlparse(absolute_url).path).lower()
+
         if path.endswith(".csv"):
             links.add(absolute_url)
 
@@ -50,10 +52,12 @@ def select_links_by_year(
     terms = tuple(term.casefold() for term in required_terms)
 
     selected = []
+
     for link in links:
         normalized = unquote(link).casefold()
         matches_year = any(year in normalized for year in years)
         matches_term = not terms or any(term in normalized for term in terms)
+
         if matches_year and matches_term:
             selected.append(link)
 
@@ -63,9 +67,11 @@ def select_links_by_year(
 def sha256_file(path: Path, chunk_size: int = 1024 * 1024) -> str:
     """Calculate a file SHA-256 without loading the whole file into memory."""
     digest = hashlib.sha256()
+
     with path.open("rb") as file:
         for chunk in iter(lambda: file.read(chunk_size), b""):
             digest.update(chunk)
+
     return digest.hexdigest()
 
 
@@ -80,7 +86,29 @@ def fetch_source_page(
         headers={"User-Agent": USER_AGENT},
     )
     response.raise_for_status()
+
     return response.text
+
+
+def build_destination_filename(url: str) -> str:
+    """Build a unique filename while preserving the source year."""
+    decoded_path = unquote(urlparse(url).path)
+    filename = Path(decoded_path).name
+
+    if not filename:
+        raise ValueError(f"Could not derive a filename from URL: {url}")
+
+    years = re.findall(r"(?<!\d)(20\d{2})(?!\d)", decoded_path)
+
+    if not years:
+        return filename
+
+    year = years[0]
+
+    if re.search(rf"(?<!\d){year}(?!\d)", filename):
+        return filename
+
+    return f"{year}-{filename}"
 
 
 def download_file(
@@ -89,17 +117,30 @@ def download_file(
     timeout: int = 120,
     max_attempts: int = 4,
 ) -> dict[str, object]:
-    """Download one raw file atomically, retrying transient network failures."""
+    """Download one file or reuse an existing local copy."""
     if max_attempts < 1:
         raise ValueError("max_attempts must be at least 1")
 
     destination_dir.mkdir(parents=True, exist_ok=True)
 
-    filename = Path(unquote(urlparse(url).path)).name
-    if not filename:
-        raise ValueError(f"Could not derive a filename from URL: {url}")
-
+    filename = build_destination_filename(url)
     destination = destination_dir / filename
+
+    if destination.exists():
+        file_stats = destination.stat()
+
+        return {
+            "filename": filename,
+            "source_url": url,
+            "downloaded_at_utc": datetime.fromtimestamp(
+                file_stats.st_mtime,
+                tz=timezone.utc,
+            ).isoformat(),
+            "size_bytes": file_stats.st_size,
+            "sha256": sha256_file(destination),
+            "reused_existing": True,
+        }
+
     temporary = destination.with_suffix(destination.suffix + ".part")
 
     for attempt in range(1, max_attempts + 1):
@@ -114,8 +155,11 @@ def download_file(
                 headers={"User-Agent": USER_AGENT},
             ) as response:
                 response.raise_for_status()
+
                 with temporary.open("wb") as file:
-                    for chunk in response.iter_content(chunk_size=1024 * 1024):
+                    for chunk in response.iter_content(
+                        chunk_size=1024 * 1024,
+                    ):
                         if chunk:
                             file.write(chunk)
 
@@ -129,10 +173,11 @@ def download_file(
             if attempt == max_attempts:
                 raise
 
-            wait_seconds = 2 ** attempt
+            wait_seconds = 2**attempt
             print(
                 f"Download interrupted for {filename}. "
-                f"Retry {attempt + 1}/{max_attempts} in {wait_seconds}s..."
+                f"Retry {attempt + 1}/{max_attempts} "
+                f"in {wait_seconds}s..."
             )
             time.sleep(wait_seconds)
 
@@ -142,6 +187,7 @@ def download_file(
         "downloaded_at_utc": datetime.now(timezone.utc).isoformat(),
         "size_bytes": destination.stat().st_size,
         "sha256": sha256_file(destination),
+        "reused_existing": False,
     }
 
 
@@ -154,16 +200,25 @@ def update_manifest(
     existing: list[dict[str, object]] = []
 
     if manifest_path.exists() and not replace_existing:
-        existing = json.loads(manifest_path.read_text(encoding="utf-8"))
+        existing = json.loads(
+            manifest_path.read_text(encoding="utf-8")
+        )
 
-    indexed = {str(record["source_url"]): record for record in existing}
+    indexed = {
+        str(record["source_url"]): record
+        for record in existing
+    }
+
     for record in records:
         indexed[str(record["source_url"])] = record
 
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.write_text(
         json.dumps(
-            sorted(indexed.values(), key=lambda item: str(item["source_url"])),
+            sorted(
+                indexed.values(),
+                key=lambda item: str(item["source_url"]),
+            ),
             ensure_ascii=False,
             indent=2,
         )
@@ -178,7 +233,7 @@ def run_ingestion(
     end_year: int = 2026,
     page_url: str = DEFAULT_SOURCE_PAGE,
 ) -> list[dict[str, object]]:
-    """Download monthly gasoline and ethanol CSVs and replace the run manifest."""
+    """Download monthly gasoline and ethanol CSVs and update the manifest."""
     html = fetch_source_page(page_url)
     discovered = discover_csv_links(page_url, html)
     selected = select_links_by_year(
@@ -190,15 +245,23 @@ def run_ingestion(
 
     if not selected:
         raise RuntimeError(
-            "No monthly gasoline/ethanol CSV links matched the requested years. "
-            "The ANP page structure may have changed."
+            "No monthly gasoline/ethanol CSV links matched the "
+            "requested years. The ANP page structure may have changed."
         )
 
-    print(f"Found {len(selected)} monthly gasoline/ethanol file(s).")
-    records = [download_file(url, output_dir) for url in selected]
+    print(
+        f"Found {len(selected)} monthly gasoline/ethanol file(s)."
+    )
+
+    records = [
+        download_file(url, output_dir)
+        for url in selected
+    ]
+
     update_manifest(
         output_dir / "manifest.json",
         records,
-        replace_existing=True,
+        replace_existing=False,
     )
+
     return records
