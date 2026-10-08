@@ -18,6 +18,7 @@ DEFAULT_SOURCE_PAGE = (
     "serie-historica-de-precos-de-combustiveis"
 )
 USER_AGENT = "fuel-price-intelligence-rj/1.0 (educational data project)"
+TARGET_FUEL_TERMS = ("gasolina", "etanol")
 
 
 def discover_csv_links(page_url: str, html: str) -> list[str]:
@@ -39,13 +40,24 @@ def select_links_by_year(
     links: Iterable[str],
     start_year: int,
     end_year: int,
+    required_terms: Iterable[str] = (),
 ) -> list[str]:
-    """Keep links whose URL contains a year inside the requested interval."""
+    """Keep URLs from the requested years that contain a target term."""
     if start_year > end_year:
         raise ValueError("start_year cannot be greater than end_year")
 
     years = {str(year) for year in range(start_year, end_year + 1)}
-    return sorted(link for link in links if any(year in unquote(link) for year in years))
+    terms = tuple(term.casefold() for term in required_terms)
+
+    selected = []
+    for link in links:
+        normalized = unquote(link).casefold()
+        matches_year = any(year in normalized for year in years)
+        matches_term = not terms or any(term in normalized for term in terms)
+        if matches_year and matches_term:
+            selected.append(link)
+
+    return sorted(selected)
 
 
 def sha256_file(path: Path, chunk_size: int = 1024 * 1024) -> str:
@@ -162,17 +174,23 @@ def run_ingestion(
     end_year: int = 2026,
     page_url: str = DEFAULT_SOURCE_PAGE,
 ) -> list[dict[str, object]]:
-    """Discover, select and download ANP CSVs, then update the manifest."""
+    """Download monthly gasoline and ethanol CSVs and update the manifest."""
     html = fetch_source_page(page_url)
     discovered = discover_csv_links(page_url, html)
-    selected = select_links_by_year(discovered, start_year, end_year)
+    selected = select_links_by_year(
+        discovered,
+        start_year,
+        end_year,
+        required_terms=TARGET_FUEL_TERMS,
+    )
 
     if not selected:
         raise RuntimeError(
-            "No CSV links matched the requested years. "
+            "No monthly gasoline/ethanol CSV links matched the requested years. "
             "The ANP page structure may have changed."
         )
 
+    print(f"Found {len(selected)} monthly gasoline/ethanol file(s).")
     records = [download_file(url, output_dir) for url in selected]
     update_manifest(output_dir / "manifest.json", records)
     return records
