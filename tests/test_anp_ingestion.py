@@ -24,8 +24,8 @@ def test_discover_csv_links_resolves_relative_urls_and_removes_duplicates() -> N
     """
 
     assert discover_csv_links(page_url, html) == [
-        "https://example.gov.br/data/files/prices-2025.CSV",
         "https://example.gov.br/data/files/prices-2024.csv",
+        "https://example.gov.br/data/files/prices-2025.CSV",
     ]
 
 
