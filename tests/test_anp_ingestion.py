@@ -11,6 +11,14 @@ from src.ingestion.anp import (
     update_manifest,
 )
 
+from src.ingestion.anp import (
+    build_destination_filename,
+    discover_csv_links,
+    download_file,
+    select_links_by_year,
+    sha256_file,
+    update_manifest,
+)
 
 def test_discover_csv_links_resolves_relative_urls_and_removes_duplicates() -> None:
     page_url = "https://example.gov.br/data/index.html"
@@ -137,3 +145,61 @@ def test_build_destination_filename_does_not_repeat_existing_year() -> None:
         build_destination_filename(url)
         == "06-dados-abertos-precos-2026-06-gasolina-etanol.csv"
     )
+
+def test_update_manifest_preserves_unrelated_existing_sources(
+    tmp_path: Path,
+) -> None:
+    manifest = tmp_path / "manifest.json"
+
+    update_manifest(
+        manifest,
+        [
+            {
+                "filename": "prices-2025.csv",
+                "source_url": "https://example.gov.br/2025/prices.csv",
+                "sha256": "2025",
+            }
+        ],
+    )
+
+    update_manifest(
+        manifest,
+        [
+            {
+                "filename": "prices-2024.csv",
+                "source_url": "https://example.gov.br/2024/prices.csv",
+                "sha256": "2024",
+            }
+        ],
+    )
+
+    records = json.loads(manifest.read_text(encoding="utf-8"))
+
+    assert len(records) == 2
+    assert {record["source_url"] for record in records} == {
+        "https://example.gov.br/2024/prices.csv",
+        "https://example.gov.br/2025/prices.csv",
+    }
+
+def test_download_file_reuses_existing_file(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url = "https://example.gov.br/2024/prices.csv"
+    destination = tmp_path / "2024-prices.csv"
+    content = b"city,price\nRio de Janeiro,6.19\n"
+    destination.write_bytes(content)
+
+    def fail_if_requested(*args: object, **kwargs: object) -> None:
+        pytest.fail("O arquivo existente não deveria ser baixado novamente.")
+
+    monkeypatch.setattr(
+        "src.ingestion.anp.requests.get",
+        fail_if_requested,
+    )
+
+    record = download_file(url, tmp_path)
+
+    assert record["filename"] == "2024-prices.csv"
+    assert record["size_bytes"] == len(content)
+    assert record["sha256"] == hashlib.sha256(content).hexdigest()
