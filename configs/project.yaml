@@ -1,0 +1,25 @@
+project:
+  name: fuel-price-intelligence-rj
+  state: RJ
+  forecast_horizon_weeks: 4
+
+data:
+  source_name: ANP
+  source_page: https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos/serie-historica-de-precos-de-combustiveis
+  raw_dir: data/raw
+  interim_dir: data/interim
+  processed_dir: data/processed
+  rejected_dir: data/rejected
+  products:
+    - GASOLINA
+    - ETANOL
+
+modeling:
+  target: average_sale_price
+  date_column: week_start
+  metrics:
+    - mae
+    - rmse
+    - smape
+    - wape
+  random_state: 42
