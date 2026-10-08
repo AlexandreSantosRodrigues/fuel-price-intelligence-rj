@@ -145,11 +145,15 @@ def download_file(
     }
 
 
-def update_manifest(manifest_path: Path, records: Iterable[dict[str, object]]) -> None:
-    """Insert or replace manifest entries using source URL as the key."""
+def update_manifest(
+    manifest_path: Path,
+    records: Iterable[dict[str, object]],
+    replace_existing: bool = False,
+) -> None:
+    """Write provenance records, optionally replacing an earlier run."""
     existing: list[dict[str, object]] = []
 
-    if manifest_path.exists():
+    if manifest_path.exists() and not replace_existing:
         existing = json.loads(manifest_path.read_text(encoding="utf-8"))
 
     indexed = {str(record["source_url"]): record for record in existing}
@@ -174,7 +178,7 @@ def run_ingestion(
     end_year: int = 2026,
     page_url: str = DEFAULT_SOURCE_PAGE,
 ) -> list[dict[str, object]]:
-    """Download monthly gasoline and ethanol CSVs and update the manifest."""
+    """Download monthly gasoline and ethanol CSVs and replace the run manifest."""
     html = fetch_source_page(page_url)
     discovered = discover_csv_links(page_url, html)
     selected = select_links_by_year(
@@ -192,5 +196,9 @@ def run_ingestion(
 
     print(f"Found {len(selected)} monthly gasoline/ethanol file(s).")
     records = [download_file(url, output_dir) for url in selected]
-    update_manifest(output_dir / "manifest.json", records)
+    update_manifest(
+        output_dir / "manifest.json",
+        records,
+        replace_existing=True,
+    )
     return records
