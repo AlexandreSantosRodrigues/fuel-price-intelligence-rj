@@ -43,6 +43,25 @@ def test_select_links_by_year() -> None:
     ]
 
 
+def test_select_links_filters_target_fuels() -> None:
+    links = [
+        "https://example.gov.br/2024-gasolina-etanol.csv",
+        "https://example.gov.br/2024-diesel-gnv.csv",
+        "https://example.gov.br/2024-glp.csv",
+        "https://example.gov.br/2025-etanol.csv",
+    ]
+
+    assert select_links_by_year(
+        links,
+        2024,
+        2025,
+        required_terms=("gasolina", "etanol"),
+    ) == [
+        "https://example.gov.br/2024-gasolina-etanol.csv",
+        "https://example.gov.br/2025-etanol.csv",
+    ]
+
+
 def test_select_links_rejects_invalid_interval() -> None:
     with pytest.raises(ValueError):
         select_links_by_year([], 2026, 2024)
