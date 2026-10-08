@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Environment and secrets
+.env
+.streamlit/secrets.toml
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Generated datasets and artifacts
+data/raw/*
+data/interim/*
+data/processed/*
+data/rejected/*
+models/*
+reports/figures/*
+
+# Keep documentation/placeholders
+!data/**/README.md
+!models/README.md
+!reports/figures/README.md
+
+# Logs
+*.log
+logs/
