@@ -6,7 +6,8 @@ requests>=2.32,<3.0
 beautifulsoup4>=4.12,<5.0
 PyYAML>=6.0,<7.0
 scikit-learn>=1.5,<2.0
-plotly>=5.24,<7.0
+plotly>=5.24,<6.0
+kaleido==0.2.1
 streamlit>=1.39,<2.0
 joblib>=1.4,<2.0
 pytest>=8.3,<9.0
