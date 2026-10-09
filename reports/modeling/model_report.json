@@ -1,0 +1,167 @@
+{
+  "generated_at_utc": "2026-10-09T11:40:19.849202+00:00",
+  "feature_path": "data/processed/weekly_forecast_features.parquet",
+  "forecast_horizon_weeks": 1,
+  "validation": {
+    "strategy": "expanding-window backtesting",
+    "initial_train_weeks": 52,
+    "test_weeks_per_fold": 4,
+    "step_weeks": 4,
+    "random_split": false
+  },
+  "feature_count": 21,
+  "feature_columns": [
+    "lag_1",
+    "lag_2",
+    "lag_4",
+    "lag_8",
+    "lag_12",
+    "rolling_mean_4",
+    "rolling_std_4",
+    "rolling_mean_8",
+    "rolling_std_8",
+    "rolling_mean_12",
+    "rolling_std_12",
+    "price_change_1",
+    "price_change_4",
+    "observation_count_lag_1",
+    "station_count_lag_1",
+    "year",
+    "month",
+    "week_of_year",
+    "week_sin",
+    "week_cos",
+    "trend"
+  ],
+  "models": [
+    "naive_last_price",
+    "ridge",
+    "random_forest",
+    "hist_gradient_boosting"
+  ],
+  "prediction_rows": 608,
+  "test_date_min": "2025-03-24",
+  "test_date_max": "2026-09-28",
+  "metrics": [
+    {
+      "product": "ETANOL",
+      "model": "naive_last_price",
+      "predictions": 76,
+      "folds": 19,
+      "mae": 0.031842,
+      "rmse": 0.050608,
+      "wape": 0.006753,
+      "bias": -0.001974,
+      "baseline_mae": 0.031842,
+      "mae_improvement_vs_baseline_pct": 0.0
+    },
+    {
+      "product": "ETANOL",
+      "model": "ridge",
+      "predictions": 76,
+      "folds": 19,
+      "mae": 0.051785,
+      "rmse": 0.07284,
+      "wape": 0.010983,
+      "bias": 0.009931,
+      "baseline_mae": 0.031842,
+      "mae_improvement_vs_baseline_pct": -62.6292
+    },
+    {
+      "product": "ETANOL",
+      "model": "hist_gradient_boosting",
+      "predictions": 76,
+      "folds": 19,
+      "mae": 0.070449,
+      "rmse": 0.091529,
+      "wape": 0.014942,
+      "bias": -0.024555,
+      "baseline_mae": 0.031842,
+      "mae_improvement_vs_baseline_pct": -121.2456
+    },
+    {
+      "product": "ETANOL",
+      "model": "random_forest",
+      "predictions": 76,
+      "folds": 19,
+      "mae": 0.078613,
+      "rmse": 0.100921,
+      "wape": 0.016673,
+      "bias": -0.025842,
+      "baseline_mae": 0.031842,
+      "mae_improvement_vs_baseline_pct": -146.8845
+    },
+    {
+      "product": "GASOLINA",
+      "model": "naive_last_price",
+      "predictions": 76,
+      "folds": 19,
+      "mae": 0.030132,
+      "rmse": 0.064487,
+      "wape": 0.004806,
+      "bias": -0.005263,
+      "baseline_mae": 0.030132,
+      "mae_improvement_vs_baseline_pct": 0.0
+    },
+    {
+      "product": "GASOLINA",
+      "model": "ridge",
+      "predictions": 76,
+      "folds": 19,
+      "mae": 0.04937,
+      "rmse": 0.081218,
+      "wape": 0.007874,
+      "bias": 0.004823,
+      "baseline_mae": 0.030132,
+      "mae_improvement_vs_baseline_pct": -63.8476
+    },
+    {
+      "product": "GASOLINA",
+      "model": "random_forest",
+      "predictions": 76,
+      "folds": 19,
+      "mae": 0.06117,
+      "rmse": 0.126226,
+      "wape": 0.009756,
+      "bias": -0.023701,
+      "baseline_mae": 0.030132,
+      "mae_improvement_vs_baseline_pct": -103.0107
+    },
+    {
+      "product": "GASOLINA",
+      "model": "hist_gradient_boosting",
+      "predictions": 76,
+      "folds": 19,
+      "mae": 0.069029,
+      "rmse": 0.128611,
+      "wape": 0.011009,
+      "bias": -0.032565,
+      "baseline_mae": 0.030132,
+      "mae_improvement_vs_baseline_pct": -129.0906
+    }
+  ],
+  "best_models": {
+    "ETANOL": {
+      "model": "naive_last_price",
+      "mae": 0.031842,
+      "rmse": 0.050608,
+      "wape": 0.006753,
+      "bias": -0.001974,
+      "mae_improvement_vs_baseline_pct": 0.0
+    },
+    "GASOLINA": {
+      "model": "naive_last_price",
+      "mae": 0.030132,
+      "rmse": 0.064487,
+      "wape": 0.004806,
+      "bias": -0.005263,
+      "mae_improvement_vs_baseline_pct": 0.0
+    }
+  },
+  "metric_definitions": {
+    "mae": "Mean absolute error in BRL per liter.",
+    "rmse": "Root mean squared error in BRL per liter.",
+    "wape": "Sum of absolute errors divided by the sum of actual prices.",
+    "bias": "Mean prediction minus actual price. Positive values indicate overprediction."
+  }
+}
