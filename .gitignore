@@ -27,6 +27,7 @@ data/processed/*
 data/rejected/*
 models/*
 reports/figures/*
+!reports/figures/*.png
 
 # Keep documentation/placeholders
 !data/**/README.md

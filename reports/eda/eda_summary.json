@@ -1,0 +1,52 @@
+{
+  "generated_at_utc": "2026-10-09T11:09:53.258338+00:00",
+  "input_path": "data/processed/rj_fuel_prices.parquet",
+  "rows": 83441,
+  "stations": 954,
+  "municipalities": 32,
+  "date_min": "2024-01-01",
+  "date_max": "2026-09-30",
+  "product_statistics": {
+    "ETANOL": {
+      "observations": 39396,
+      "mean": 4.55,
+      "median": 4.55,
+      "standard_deviation": 0.4228,
+      "minimum": 3.3,
+      "maximum": 6.39,
+      "q1": 4.25,
+      "q3": 4.89
+    },
+    "GASOLINA": {
+      "observations": 44045,
+      "mean": 6.1557,
+      "median": 6.09,
+      "standard_deviation": 0.4346,
+      "minimum": 4.84,
+      "maximum": 7.99,
+      "q1": 5.84,
+      "q3": 6.49
+    }
+  },
+  "municipality_adjusted_extremes": {
+    "ETANOL": {
+      "lowest_relative_municipality": "TERESOPOLIS",
+      "lowest_relative_price_pct": -7.5044,
+      "highest_relative_municipality": "TRES RIOS",
+      "highest_relative_price_pct": 15.9453
+    },
+    "GASOLINA": {
+      "lowest_relative_municipality": "TERESOPOLIS",
+      "lowest_relative_price_pct": -5.0306,
+      "highest_relative_municipality": "TRES RIOS",
+      "highest_relative_price_pct": 9.6335
+    }
+  },
+  "ethanol_competitiveness": {
+    "threshold": 0.7,
+    "municipality_week_comparisons": 3557,
+    "competitive_comparisons": 377,
+    "competitive_rate": 0.106,
+    "median_ratio": 0.7373
+  }
+}
