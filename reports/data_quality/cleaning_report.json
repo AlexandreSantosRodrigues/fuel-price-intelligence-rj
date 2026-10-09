@@ -1,0 +1,23 @@
+{
+  "generated_at_utc": "2026-10-09T10:25:28.731674+00:00",
+  "input_files": 32,
+  "raw_rows_read": 1561307,
+  "rows_in_scope": 83443,
+  "rows_out_of_scope": 1477864,
+  "accepted_rows_before_deduplication": 83443,
+  "duplicate_rows_removed": 2,
+  "processed_rows": 83441,
+  "rejected_rows": 0,
+  "date_min": "2024-01-01",
+  "date_max": "2026-09-30",
+  "sale_price_min": 3.3,
+  "sale_price_max": 7.99,
+  "products": {
+    "GASOLINA": 44045,
+    "ETANOL": 39396
+  },
+  "municipality_count": 32,
+  "rejection_reasons": {},
+  "processed_path": "data/processed/rj_fuel_prices.parquet",
+  "rejected_path": "data/rejected/rj_fuel_prices_rejected.parquet"
+}
