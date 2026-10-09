@@ -1,0 +1,50 @@
+{
+  "generated_at_utc": "2026-10-09T11:28:06.118239+00:00",
+  "input_path": "data/processed/rj_fuel_prices.parquet",
+  "output_path": "data/processed/weekly_forecast_features.parquet",
+  "forecast_horizon_weeks": 1,
+  "target": "weekly statewide median sale price",
+  "minimum_coverage_ratio": 0.5,
+  "raw_price_rows": 83441,
+  "observed_weekly_rows": 282,
+  "regularized_weekly_rows": 288,
+  "missing_calendar_rows": 6,
+  "unreliable_observed_rows": 2,
+  "modeling_rows": 256,
+  "modeling_rows_by_product": {
+    "ETANOL": 128,
+    "GASOLINA": 128
+  },
+  "date_min": "2024-03-25",
+  "date_max": "2026-09-28",
+  "feature_count": 21,
+  "feature_columns": [
+    "lag_1",
+    "lag_2",
+    "lag_4",
+    "lag_8",
+    "lag_12",
+    "rolling_mean_4",
+    "rolling_std_4",
+    "rolling_mean_8",
+    "rolling_std_8",
+    "rolling_mean_12",
+    "rolling_std_12",
+    "price_change_1",
+    "price_change_4",
+    "observation_count_lag_1",
+    "station_count_lag_1",
+    "year",
+    "month",
+    "week_of_year",
+    "week_sin",
+    "week_cos",
+    "trend"
+  ],
+  "leakage_controls": [
+    "All lag and rolling features use only values available before the target week.",
+    "Missing weeks are filled only in the historical predictor series using forward filling.",
+    "Missing weeks and observations below 50% of the typical weekly coverage are excluded as targets.",
+    "Chronological validation must be used; random train-test splitting is forbidden."
+  ]
+}
